@@ -17,16 +17,37 @@ class Name(Field):
 class Phone(Field):
     def __init__(self, value):
         super().__init__(value)
-        self.phone_valid(value)
+        self.phone_valid = value
 
+    @property
+    def phone_valid(self):
+        return self.value
+
+    @phone_valid.setter
     def phone_valid(self, phone):
         if len(phone) != 10 or not phone.isdigit():
             raise ValueError('Invalid phone number.')
-        return True
+        self.value = phone
 
 
 class Birthday(Field):
-    pass
+    def __init__(self, value):
+        super().__init__(value)
+        self.birthday_valid = value
+
+    @property
+    def birthday_valid(self):
+        return self.value
+
+    @birthday_valid.setter
+    def birthday_valid(self, birthday):
+        try:
+            if int(birthday[-4:]) < 1930:
+                raise ValueError
+            else:
+                self.value = birthday
+        except ValueError:
+            print('Birthday year can not be less than 1930.')
 
 
 class Record:
@@ -38,8 +59,14 @@ class Record:
     def add_birthday(self, birthday):
         self.birthday = birthday
 
-    def days_to_birthday(self, birthday: str):
-        birthday_datetime = datetime.strptime(birthday, '%d %B %Y').date()
+    def days_to_birthday(self):
+        if not self.birthday:
+            return 'No birthday details.'
+        if isinstance(self.birthday, Birthday):
+            birthday_datetime = datetime.strptime(self.birthday.value, '%d %B %Y').date()
+        else:
+            birthday_datetime = datetime.strptime(self.birthday, '%d %B %Y').date()
+
         current_year_birthday = datetime(datetime.now().year, birthday_datetime.month, birthday_datetime.day).date()
         if current_year_birthday.month >= datetime.now().month:
             difference = current_year_birthday - datetime.now().date()
@@ -50,8 +77,8 @@ class Record:
 
     def add_phone(self, phone):
         try:
-            p = Phone(phone)    # created p which is an instance of class Phone
-            if p.phone_valid(phone):
+            p = Phone(phone)
+            if p.phone_valid:
                 self.phones.append(p)
         except ValueError as e:
             print(e)
@@ -79,9 +106,9 @@ class Record:
 
     def __str__(self):
         if not self.birthday:
-            return 'Contact name: {:<10} Phones: {:<25} Birthday: {:<25} {}'.format(self.name.value, '; '.join(p.value for p in self.phones), 'No birthday details.', 'No birthday details.')
+            return 'Contact name: {:<10} Phones: {:<25} Birthday: {:<25} {}'.format(self.name.value, '; '.join(p.value for p in self.phones), self.days_to_birthday(), self.days_to_birthday())
         else:
-            return 'Contact name: {:<10} Phones: {:<25} Birthday: {:<25} {}'.format(self.name.value, '; '.join(p.value for p in self.phones), self.birthday, self.days_to_birthday(self.birthday))
+            return 'Contact name: {:<10} Phones: {:<25} Birthday: {:<25} {}'.format(self.name.value, '; '.join(p.value for p in self.phones), str(self.birthday), self.days_to_birthday())
 
 
 class AddressBook(UserDict):
@@ -105,7 +132,7 @@ class AddressBook(UserDict):
 
     def iterator(self, n):
         if n > len(book.data):
-            print(f'There are only {len(book.data)} records in Address Book.')
+            print(f'There are {len(book.data)} records in Address Book.')
         counter = 0
         result = ''
         for _, record in self.data.items():
@@ -114,3 +141,9 @@ class AddressBook(UserDict):
             if counter == n:
                 yield result
                 result = ''
+
+
+book = AddressBook()
+
+for record in book.iterator(0):
+    print(record)
